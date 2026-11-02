@@ -54,3 +54,4 @@ pc/.state.json
 pc/__pycache__/
 pc/*.log
 *.apk
+pc/config.txt

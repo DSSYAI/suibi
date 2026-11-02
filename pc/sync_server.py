@@ -22,8 +22,25 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 APP = "suibi"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_OUT = r"E:\agent\Fold for DSH\随笔"
+DEFAULT_OUT = os.path.join(os.path.expanduser("~"), "随笔")
 LAST_SEEN = time.time()
+
+
+def resolve_out_dir(cli_dir=None):
+    """输出目录：命令行 > pc/config.txt > 家目录下的「随笔」。"""
+    if cli_dir:
+        return cli_dir
+    cfg = os.path.join(BASE_DIR, "config.txt")
+    if os.path.exists(cfg):
+        try:
+            with open(cfg, encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#"):
+                        return line
+        except OSError:
+            pass
+    return DEFAULT_OUT
 
 
 def load_token():
@@ -274,7 +291,7 @@ def watch_idle(server, seconds):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8730)
-    ap.add_argument("--dir", default=DEFAULT_OUT)
+    ap.add_argument("--dir", default=None)
     ap.add_argument("--idle", type=int, default=900)
     args = ap.parse_args()
 
@@ -285,7 +302,8 @@ def main():
             pass
 
     token = load_token()
-    Handler.out_dir = args.dir
+    out_dir = resolve_out_dir(args.dir)
+    Handler.out_dir = out_dir
     Handler.token = token
     Handler.idle_seconds = args.idle
 
@@ -312,7 +330,7 @@ def main():
     for ip in local_ipv4():
         print(f"  地址：http://{ip}:{port}")
     print(f"  口令：{token}")
-    print(f"  存到：{args.dir}")
+    print(f"  存到：{out_dir}")
     print("  " + "-" * 36)
     print("  手机：点右上角云朵 → 填地址和口令 → 立即同步")
     print("  窗口要一直开着，关掉就断了。")
